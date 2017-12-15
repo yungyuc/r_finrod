@@ -4,6 +4,8 @@ handover/
 *.aux
 *.log
 *.out
+*.bbl
+*.blg
 *.dvi
 *.ps
 *.pdf

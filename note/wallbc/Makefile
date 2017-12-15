@@ -23,7 +23,7 @@ endif # FIXME: other platform?
 MAIN_FN := wallbc
 EPS_DIR := eps
 SCHEMATIC_DIR := schematic
-LATEX_DERIVED_EXT := toc aux log out dvi ps pdf
+LATEX_DERIVED_EXT := toc aux log out bbl blg dvi ps pdf
 NOWDATE := $(shell date +"%Y%m%d")
 NOWID := $(shell git rev-parse --short HEAD 2> /dev/null || echo "nogit")
 HANDOVER_DIR := handover
@@ -44,6 +44,7 @@ $(MAIN_FN).dvi: $(MAIN_FN).tex $(ALL_EPS) Makefile
 	@echo "Having EPS files: $(ALL_EPS)"
 	num=1 ; while [ $$num -le $(NUM) ] ; do \
 		latex $< 2>&1 | tee $@.$$num.cmd.log $(CMDLOG_REDIRECT) ; \
+		bibtex $(MAIN_FN) 2>&1 | tee $@.$$num.bibcmd.log $(CMDLOG_REDIRECT) ; \
 		(( num = num + 1 )) ; \
 	done
 
