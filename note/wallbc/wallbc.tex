@@ -1,0 +1,777 @@
+\documentclass[a4paper,12pt,dvips]{article}
+\usepackage[textwidth=6.5in,textheight=9in]{geometry}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[monochrome]{color}
+\usepackage{graphicx}     % From LaTeX distribution
+%\usepackage{subfigure}    % From CTAN/macros/latex/contrib/supported/subfigure
+\usepackage{pst-all}      % From PSTricks
+\usepackage{pst-poly}     % From pstricks/contrib/pst-poly
+\usepackage{multido}      % From PSTricks
+\usepackage[center,footnotesize]{caption}
+\usepackage[subrefformat=parens]{subcaption}
+
+\graphicspath{{eps/}}
+
+%\numberwithin{equation}{section}
+
+\newcommand*\diff{\mathop{}\!\mathrm{d}}
+\newcommand*\Diff[1]{\mathop{}\!\mathrm{d^#1}}
+\newcommand*\defeq{\buildrel{\text{def}}\over{=}}
+
+\begin{document}
+
+\title{Wall Boundary Treatment for Gas Dynamics}
+\author{Yung-Yu Chen}
+\date{2016.3.11}
+
+\maketitle
+
+\tableofcontents
+%\listoffigures
+
+\hspace{.5cm}
+
+Regarding gas dynamics, almost all problem setups involve walls.  For the Euler
+equation, which doesn't have a diffusion term, inviscid solid walls are
+commonplace.  A reflection flow is usually used to treat the solid-wall
+boundary condition\cite{laney_computational_1998}.  The technique is similar to
+the method of image for the Laplace equation.  For the Euler equation, if there
+is a flow mirroring the flow inside the wall, the boundary will not be
+penetrated.  The reflection flow is also called a ghost flow because it is
+artificially created outside the computing domain.
+
+\section{Rotational Coordinate Transform}
+
+Consider the general case in the three-dimensional Euclidean coordinate system.
+Call $(x_1, x_2, x_3)$ a global coordinate system of which
+%
+$\hat{\mathbf{x}}_1$, $\hat{\mathbf{x}}_2$, and $\hat{\mathbf{x}}_3$
+%
+are the unit vectors along the axes, respectively.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{boundary_coordinate.eps}
+\caption{The local coordinate system of a boundary face.}
+\label{f:boundary_coordinate}
+\end{figure}
+
+Of a certain boundary face, let
+%
+\begin{align}
+  \hat{\boldsymbol{\xi}}_1
+  = \xi_{11} \hat{\mathbf{x}}_1
+  + \xi_{12} \hat{\mathbf{x}}_2
+  + \xi_{13} \hat{\mathbf{x}}_3
+  \label{e:coord:xi1}
+\end{align}
+%
+be the unit normal vector.  See Fig.~\ref{f:boundary_coordinate}.  By choosing
+two other orthogonal unit vectors
+%
+\begin{align}
+\begin{aligned}
+  \hat{\boldsymbol{\xi}}_2
+ &= \xi_{21} \hat{\mathbf{x}}_1
+  + \xi_{22} \hat{\mathbf{x}}_2
+  + \xi_{23} \hat{\mathbf{x}}_3
+  \\
+  \hat{\boldsymbol{\xi}}_3
+ &= \xi_{31} \hat{\mathbf{x}}_1
+  + \xi_{32} \hat{\mathbf{x}}_2
+  + \xi_{33} \hat{\mathbf{x}}_3
+\end{aligned}
+\label{e:coord:xi23}
+\end{align}
+%
+that fulfill the right-hand rule:
+%
+$\hat{\boldsymbol{\xi}}_3 = \hat{\boldsymbol{\xi}}_1 \times
+\hat{\boldsymbol{\xi}}_2$,
+%
+$\hat{\boldsymbol{\xi}}_1 = \hat{\boldsymbol{\xi}}_2 \times
+\hat{\boldsymbol{\xi}}_3$, and
+%
+$\hat{\boldsymbol{\xi}}_2 = \hat{\boldsymbol{\xi}}_3 \times
+\hat{\boldsymbol{\xi}}_1$,
+%
+a local coordinate system $(\xi_1, \xi_2, \xi_3)$ is defined on the boundary
+face.  Note, the two coordinate systems are assumed to have the same origin, so
+that they can be transformed to each other by pure rotation.  (They are drawn
+at different locations in Fig.~\ref{f:boundary_coordinate} to make the
+schematics clean.)
+
+\subsection{Vector Rotation}
+
+A certain vector, or point, in space can be represented using both of the
+coordinate systems.  That is, with $\mathbf{p}$ denoting the point in $(x_1,
+x_2, x_3)$, and $\bar{\mathbf{p}}$ denoting it in $(\xi_1, \xi_2, \xi_3)$, the
+following equation holds
+\begin{align*}
+  \mathbf{p}
+  = p_1 \hat{\mathbf{x}}_1 + p_2 \hat{\mathbf{x}}_2 + p_3 \hat{\mathbf{x}}_3
+  = \bar{\mathbf{p}}
+  = \bar{p}_1 \hat{\boldsymbol{\xi}}_1
+  + \bar{p}_2 \hat{\boldsymbol{\xi}}_2
+  + \bar{p}_3 \hat{\boldsymbol{\xi}}_3
+\end{align*}
+Substitute Eqs.~(\ref{e:coord:xi1}) and (\ref{e:coord:xi23}) into the above
+equation:
+\begin{align*}
+  p_1 \hat{\mathbf{x}}_1 + p_2 \hat{\mathbf{x}}_2 + p_3 \hat{\mathbf{x}}_3
+  = \; 
+   &\bar{p}_1 (\xi_{11} \hat{\mathbf{x}}_1 + \xi_{12} \hat{\mathbf{x}}_2
+             + \xi_{13} \hat{\mathbf{x}}_3)
+  \\
+  + \;
+   &\bar{p}_2 (\xi_{21} \hat{\mathbf{x}}_1 + \xi_{22} \hat{\mathbf{x}}_2
+             + \xi_{23} \hat{\mathbf{x}}_3)
+  \\
+  + \;
+   &\bar{p}_3 (\xi_{31} \hat{\mathbf{x}}_1 + \xi_{32} \hat{\mathbf{x}}_2
+             + \xi_{33} \hat{\mathbf{x}}_3)
+\end{align*}
+Because $\hat{\mathbf{x}}_1$, $\hat{\mathbf{x}}_2$, and $\hat{\mathbf{x}}_3$
+are orthogonal, reorganizing the equation gives the transformation relation
+between the two coordinate systems $(x_1, x_2, x_3)$, and $(\xi_1, \xi_2,
+\xi_3)$ as three independent equations
+\begin{align}
+\begin{aligned}
+  p_1 &= \bar{p}_1 \xi_{11} + \bar{p}_2 \xi_{21} + \bar{p}_3 \xi_{31}
+  \\
+  p_2 &= \bar{p}_1 \xi_{12} + \bar{p}_2 \xi_{22} + \bar{p}_3 \xi_{32}
+  \\
+  p_3 &= \bar{p}_1 \xi_{13} + \bar{p}_2 \xi_{23} + \bar{p}_3 \xi_{33}
+\end{aligned}
+\label{e:rotrel}
+\end{align}
+
+If the vector $\mathbf{p}$ (and $\bar{\mathbf{p}}$) is written as a column
+vector
+\begin{align*}
+  \mathbf{p} = \left(\begin{array}{c}
+    p_1 \\ p_2 \\ p_3
+  \end{array}\right), \;
+  \bar{\mathbf{p}} = \left(\begin{array}{c}
+    \bar{p}_1 \\ \bar{p}_2 \\ \bar{p}_3
+  \end{array}\right)
+\end{align*}
+The transformation relation Eq.~(\ref{e:rotrel}) can be rewritten in the
+matrix-vector form
+\begin{align}
+  \mathbf{p} = \mathrm{R}\bar{\mathbf{p}},
+  \; \mbox{and conversely} \;
+  \bar{\mathbf{p}} = \mathrm{R}^{-1}\mathbf{p}
+  \label{e:rotmv}
+\end{align}
+where
+\begin{align}
+  \mathrm{R}
+  \defeq \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{21} & \xi_{31} \\
+    \xi_{12} & \xi_{22} & \xi_{32} \\
+    \xi_{13} & \xi_{23} & \xi_{33}
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \hat{\boldsymbol{\xi}}_1 &
+    \hat{\boldsymbol{\xi}}_2 &
+    \hat{\boldsymbol{\xi}}_3
+  \end{array}\right)
+  \label{e:rotmat}
+\end{align}
+Note, if $\mathbf{x}$ is used to represent a position vector in $(x_1, x_2,
+x_3)$, and $\boldsymbol{\xi}$ is used to represent a position vector in
+$(\xi_1, \xi_2, \xi_3)$, then when the two position vectors point to the same
+location, $\mathbf{p} = \mathbf{x}$, $\bar{\mathbf{p}} = \boldsymbol{\xi}$, and
+$\mathbf{x} = \boldsymbol{\xi}$.
+
+\subsection{Jacobian Rotation}
+
+Consider a vector function $\mathbf{v}(\mathbf{x})$ in Euclidean $n$-space.  A
+Jacobian is defined as
+\begin{align*}
+  \dfrac{\partial\mathbf{v}}{\partial\mathbf{x}}
+  = \dfrac{\partial(v_1, \ldots, v_n)}{\partial(x_1, \ldots, x_n)},
+  \; \mbox{or} \;
+  \renewcommand{\arraystretch}{2.2}
+  \dfrac{\partial\mathbf{v}}{\partial\mathbf{x}}
+  = \left(\begin{array}{ccc}
+    \dfrac{\partial v_1}{\partial x_1} &
+    \cdots &
+    \dfrac{\partial v_2}{\partial x_n} \\
+    \vdots & \ddots & \vdots \\
+    \dfrac{\partial v_n}{\partial x_1} &
+    \cdots &
+    \dfrac{\partial v_n}{\partial x_n}
+  \end{array}\right)
+\end{align*}
+Write the Jacobian matrices of $\mathbf{v}$ in both the global and local
+coordinate systems, respectively:
+\begin{align*}
+  \renewcommand{\arraystretch}{2.2}
+  \mathrm{J}
+  = \left(\begin{array}{ccc}
+    \dfrac{\partial v_1}{\partial x_1} &
+    \dfrac{\partial v_1}{\partial x_2} &
+    \dfrac{\partial v_1}{\partial x_3} \\
+    \dfrac{\partial v_2}{\partial x_1} &
+    \dfrac{\partial v_2}{\partial x_2} &
+    \dfrac{\partial v_2}{\partial x_3} \\
+    \dfrac{\partial v_3}{\partial x_1} &
+    \dfrac{\partial v_3}{\partial x_2} &
+    \dfrac{\partial v_3}{\partial x_3}
+  \end{array}\right)
+  \; \mbox{and} \;
+  \bar{\mathrm{J}}
+  = \left(\begin{array}{ccc}
+    \dfrac{\partial \bar{v}_1}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}_1}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}_1}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}_2}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}_2}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}_2}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}_3}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}_3}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}_3}{\partial\xi_3}
+  \end{array}\right)
+\end{align*}
+Aided by $\mathbf{v} = \mathrm{R}\bar{\mathbf{v}}$, write
+\begin{align*}
+  \frac{\partial v_i}{\partial x_j}
+  = \frac{\partial (\mathrm{R}\bar{\mathbf{v}})_i}{\partial x_j}
+  = \frac{\partial}{\partial x_j}
+    \left( \sum_{k=1}^3 \xi_{ki}\bar{v}_k \right)
+  = \sum_{k=1}^3
+    \left( \xi_{ki} \frac{\partial \bar{v}_k}{\partial x_j} \right),
+  \; i,j = 1, 2, 3
+\end{align*}
+By following the chain rule, write
+\begin{align*}
+  \frac{\partial \bar{v}_k}{\partial x_j}
+  = \sum_{l=1}^3
+    \left(
+      \frac{\partial \bar{v}_k}{\partial \xi_l}
+      \frac{\partial \xi_l}{\partial x_j}
+    \right)
+  = \sum_{l=1}^3
+    \left( \xi_{lj} \frac{\partial \bar{v}_k}{\partial \xi_l} \right),
+  \; j,k = 1, 2, 3
+\end{align*}
+Combining the above two equations gives
+\begin{align*}
+  \frac{\partial v_i}{\partial x_j}
+  = \sum_{k,l=1}^3
+    \left(
+      \xi_{ki} \xi_{lj} \frac{\partial \bar{v}_k}{\partial \xi_l}
+    \right),
+  \; i,j = 1, 2, 3
+\end{align*}
+The matrix-vector form of the above equations is
+\begin{align}
+  \mathrm{J} = \mathrm{R\bar{J}R^{-1}},
+  \; \mbox{with the inverse transformation} \;
+  \bar{\mathrm{J}} = \mathrm{R^{-1}JR}
+  \label{e:rotjac}
+\end{align}
+
+\section{No-Penetration Boundary Condition}
+
+The no-penetration condition enforces that nothing flows through the boundary.
+That is, at all time, the vector component in the $\xi_1$-direction must be
+zero at the boundary:
+\begin{align*}
+  \Bigl.\bar{v}_1\Bigr|_{\xi_1=0} = 0
+\end{align*}
+For the concept of ``flow'' to make sense, here the vector $\mathbf{v}$ is
+considered as velocity.
+
+A common treatment is to use a reflection flow with a ghost cell.  A ghost cell
+is mirror image of an interior cell.  By creating a ghost flow mirroring the
+interior flow, the no-penetration condition is satisfied.  Let the double prime
+(${}''$) denote the value with the ghost cell (outside the computing domain),
+and the single prime (${}'$) denote the value with the interior cell.  Write
+\begin{align*}
+  \bar{v}''_1 = -\bar{v}'_1
+\end{align*}
+Spatial derivatives are part of solutions in the CESE method, and they need to
+be treated as well:
+\begin{align*}
+  \frac{\partial \bar{v}''_1}{\partial\xi_1} =
+  \frac{\partial \bar{v}'_1}{\partial\xi_1}, \quad
+  \frac{\partial \bar{v}''_1}{\partial\xi_2} =
+  -\frac{\partial \bar{v}'_1}{\partial\xi_2}, \quad
+  \frac{\partial \bar{v}''_1}{\partial\xi_3} =
+  -\frac{\partial \bar{v}'_1}{\partial\xi_3}
+\end{align*}
+The tangential components should remain unchanged.  Their treatment is
+\begin{align*}
+\begin{gathered}
+  \bar{v}''_i = \bar{v}'_i, \\
+  \frac{\partial \bar{v}''_i}{\partial\xi_1} =
+  -\frac{\partial \bar{v}'_i}{\partial\xi_1}, \quad
+  \frac{\partial \bar{v}''_i}{\partial\xi_2} =
+  \frac{\partial \bar{v}'_i}{\partial\xi_2}, \quad
+  \frac{\partial \bar{v}''_i}{\partial\xi_3} =
+  \frac{\partial \bar{v}'_i}{\partial\xi_3}
+\end{gathered}
+\end{align*}
+where $i = 2, 3$.
+
+Aided by letting
+\begin{align*}
+  \mathrm{N} \defeq \left(\begin{array}{ccc}
+    1 & 0 & 0 \\ 0 & -1 & 0 \\ 0 & 0 & -1
+  \end{array}\right)
+\end{align*}
+the treatments can be written in the matrix-vector form in the local coordinate
+system $(\xi_1, \xi_2, \xi_3)$:
+\begin{gather*}
+  \left(\begin{array}{c}
+    \bar{v}''_1 \\ \bar{v}''_2 \\ \bar{v}''_3
+  \end{array}\right)
+  = -\mathrm{N}
+    \left(\begin{array}{c}
+      \bar{v}'_1 \\ \bar{v}'_2 \\ \bar{v}'_3
+    \end{array}\right),
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    \dfrac{\partial \bar{v}''_1}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}''_1}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}''_1}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}''_2}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}''_2}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}''_2}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}''_3}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}''_3}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}''_3}{\partial\xi_3}
+  \end{array}\right)
+  = \mathrm{N}
+  \left(\begin{array}{ccc}
+    \dfrac{\partial \bar{v}'_1}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}'_1}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}'_1}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}'_2}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}'_2}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}'_2}{\partial\xi_3} \\
+    \dfrac{\partial \bar{v}'_3}{\partial\xi_1} &
+    \dfrac{\partial \bar{v}'_3}{\partial\xi_2} &
+    \dfrac{\partial \bar{v}'_3}{\partial\xi_3}
+  \end{array}\right)
+  \mathrm{N}
+\end{gather*}
+or, more concisely,
+\begin{align*}
+  \bar{\mathbf{v}}'' = -\mathrm{N}\bar{\mathbf{v}}'
+  \; \mbox{and} \;
+  \bar{\mathrm{J}}'' = \mathrm{N\bar{J}'N}
+\end{align*}
+
+\subsection{Treat Directly in the Global Coordinate System}
+
+It is not convenient nor efficient to specify the boundary condition using the
+local coordinate system $(\xi_1, \xi_2, \xi_3)$.  We'd like to use the global
+coordinate system $(x_1, x_2, x_3)$.  For the vector itself, perform the
+coordinate transform:
+\begin{gather*}
+  \mathrm{R}^{-1}\mathbf{v}''
+  = \bar{\mathbf{v}}''
+  = -\mathrm{N}\bar{\mathbf{v}}'
+  = -\mathrm{N}\mathrm{R}^{-1}\mathbf{v}'
+  \\
+  \Rightarrow \;
+  \mathbf{v}'' = -\mathrm{RNR^{-1}}\mathbf{v}'
+\end{gather*}
+The above equation can be rewritten as
+\begin{align*}
+  \mathbf{v}'' = -\mathrm{T}\mathbf{v}'
+\end{align*}
+where
+\begin{align*}
+  \mathrm{T}
+ &\defeq \mathrm{RNR^{-1}}
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{21} & \xi_{31} \\
+    \xi_{12} & \xi_{22} & \xi_{32} \\
+    \xi_{13} & \xi_{23} & \xi_{33}
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    1 & 0 & 0 \\
+    0 & -1 & 0 \\
+    0 & 0 & -1
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} & \xi_{13} \\
+    \xi_{21} & \xi_{22} & \xi_{23} \\
+    \xi_{31} & \xi_{32} & \xi_{33}
+  \end{array}\right)
+  \\
+ &= \left(\begin{array}{ccc}
+    \xi_{11}^2       - \xi_{21}^2       - \xi_{31}^2       &
+    \xi_{11}\xi_{12} - \xi_{21}\xi_{22} - \xi_{31}\xi_{32} &
+    \xi_{11}\xi_{13} - \xi_{21}\xi_{23} - \xi_{31}\xi_{33} \\
+    \xi_{11}\xi_{12} - \xi_{21}\xi_{22} - \xi_{31}\xi_{32} &
+    \xi_{12}^2       - \xi_{22}^2       - \xi_{32}^2       &
+    \xi_{12}\xi_{13} - \xi_{22}\xi_{23} - \xi_{32}\xi_{33} \\
+    \xi_{11}\xi_{13} - \xi_{21}\xi_{23} - \xi_{31}\xi_{33} &
+    \xi_{12}\xi_{13} - \xi_{22}\xi_{23} - \xi_{32}\xi_{33} &
+    \xi_{13}^2       - \xi_{23}^2       - \xi_{33}^2
+  \end{array}\right)
+\end{align*}
+Similarly,
+\begin{gather*}
+  \mathrm{R^{-1}J''R} = \bar{\mathrm{J}}'' = \mathrm{N\bar{J}'N}
+  = \mathrm{NR^{-1}J'RN}
+  \\
+  \Rightarrow \;
+  \mathrm{J}'' = \mathrm{RNR^{-1}J'RNR^{-1}}
+  \\
+  \Rightarrow \;
+  \mathrm{J}'' = \mathrm{TJ'T}
+\end{gather*}
+Spelling out the treatments:
+\begin{align}
+\begin{aligned}
+  \left(\begin{array}{c}
+    v''_1 \\ v''_2 \\ v''_3
+  \end{array}\right)
+  = &\;
+ -\left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    v'_1 \\ v'_2 \\ v'_3
+  \end{array}\right),
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    \dfrac{\partial v''_1}{\partial x_1} &
+    \dfrac{\partial v''_1}{\partial x_2} &
+    \dfrac{\partial v''_1}{\partial x_3} \\
+    \dfrac{\partial v''_2}{\partial x_1} &
+    \dfrac{\partial v''_2}{\partial x_2} &
+    \dfrac{\partial v''_2}{\partial x_3} \\
+    \dfrac{\partial v''_3}{\partial x_1} &
+    \dfrac{\partial v''_3}{\partial x_2} &
+    \dfrac{\partial v''_3}{\partial x_3}
+  \end{array}\right)
+  = &\;
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    \dfrac{\partial v'_1}{\partial x_1} &
+    \dfrac{\partial v'_1}{\partial x_2} &
+    \dfrac{\partial v'_1}{\partial x_3} \\
+    \dfrac{\partial v'_2}{\partial x_1} &
+    \dfrac{\partial v'_2}{\partial x_2} &
+    \dfrac{\partial v'_2}{\partial x_3} \\
+    \dfrac{\partial v'_3}{\partial x_1} &
+    \dfrac{\partial v'_3}{\partial x_2} &
+    \dfrac{\partial v'_3}{\partial x_3}
+  \end{array}\right)
+  \\ &\;
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+\end{aligned}
+\label{e:treat:vec}
+\end{align}
+Note $\mathrm{T}$ is a real symmetric matrix.
+
+The treatment for a scalar property ($\alpha$) is the same as that of the
+tangential component of $\mathbf{v}$
+\begin{align*}
+\begin{gathered}
+  \alpha'' = \alpha', \\
+  \frac{\partial \alpha''}{\partial\xi} =
+  -\frac{\partial \alpha'}{\partial\xi}, \quad
+  \frac{\partial \alpha''}{\partial\eta} =
+  \frac{\partial \alpha'}{\partial\eta}, \quad
+  \frac{\partial \alpha''}{\partial\zeta} =
+  \frac{\partial \alpha'}{\partial\zeta}
+\end{gathered}
+\end{align*}
+Aided by $\mathrm{R}$, write it in the matrix-vector form
+\begin{align}
+\begin{gathered}
+  \alpha'' = \alpha', \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{c}
+    \dfrac{\partial\alpha''}{\partial x} \\
+    \dfrac{\partial\alpha''}{\partial y} \\
+    \dfrac{\partial\alpha''}{\partial z} \\
+  \end{array}\right)
+  = \mathrm{R}^{-1}
+  \left(\begin{array}{c}
+    \dfrac{\partial\alpha'}{\partial x} \\
+    \dfrac{\partial\alpha'}{\partial y} \\
+    \dfrac{\partial\alpha'}{\partial z} \\
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} & \xi_{13} \\
+    \xi_{21} & \xi_{22} & \xi_{23} \\
+    \xi_{31} & \xi_{32} & \xi_{33}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    \dfrac{\partial\alpha'}{\partial x} \\
+    \dfrac{\partial\alpha'}{\partial y} \\
+    \dfrac{\partial\alpha'}{\partial z} \\
+  \end{array}\right)
+\end{gathered}
+\label{e:treat:sca}
+\end{align}
+
+\subsection{The Euler Equation}
+
+The conservation variables of the Euler equation is defined as
+\begin{align*}
+  \renewcommand{\arraystretch}{2}
+  \mathbf{u} = \left(\begin{array}{c}
+    \rho \\ \rho v_1 \\ \rho v_2 \\ \rho v_3 \\
+    \rho\left(e + \dfrac{v_1^2+v_2^2+v_3^2}{2}\right)
+  \end{array}\right)
+  = \left(\begin{array}{c}
+    u_1 \\ u_2 \\ u_3 \\ u_4 \\ u_5
+  \end{array}\right)
+\end{align*}
+where $\rho$ is the density, $\mathbf{v}$ the velocity, and $e$ the internal
+energy.  Note $\mathbf{u}$ is a 5-component vector while $\mathbf{v}$ is a
+3-component Cartesian vector.  $\left(\begin{array}{ccc} u_2 & u_3 & u_4
+\end{array}\right)^t$ is a Cartesian vector and $u_1$ and $u_5$ are scalar.
+%
+Aided by Eq.~(\ref{e:treat:vec}), write
+\begin{align}
+\begin{aligned}
+  \left(\begin{array}{c}
+    u''_2 \\ u''_3 \\ u''_4
+  \end{array}\right)
+  = &\;
+ -\left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    u'_2 \\ u'_3 \\ u'_4
+  \end{array}\right),
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    \dfrac{\partial u''_2}{\partial x_1} &
+    \dfrac{\partial u''_2}{\partial x_2} &
+    \dfrac{\partial u''_2}{\partial x_3} \\
+    \dfrac{\partial u''_3}{\partial x_1} &
+    \dfrac{\partial u''_3}{\partial x_2} &
+    \dfrac{\partial u''_3}{\partial x_3} \\
+    \dfrac{\partial u''_4}{\partial x_1} &
+    \dfrac{\partial u''_4}{\partial x_2} &
+    \dfrac{\partial u''_4}{\partial x_3}
+  \end{array}\right)
+  = &\;
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    \dfrac{\partial u'_2}{\partial x_1} &
+    \dfrac{\partial u'_2}{\partial x_2} &
+    \dfrac{\partial u'_2}{\partial x_3} \\
+    \dfrac{\partial u'_3}{\partial x_1} &
+    \dfrac{\partial u'_3}{\partial x_2} &
+    \dfrac{\partial u'_3}{\partial x_3} \\
+    \dfrac{\partial u'_4}{\partial x_1} &
+    \dfrac{\partial u'_4}{\partial x_2} &
+    \dfrac{\partial u'_4}{\partial x_3}
+  \end{array}\right)
+  \\ &\;
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} & T_{13} \\
+    T_{21} & T_{22} & T_{23} \\
+    T_{31} & T_{32} & T_{33}
+  \end{array}\right)
+\end{aligned}
+\label{e:treat:euler3d:vec}
+\end{align}
+%
+Aided by Eq.~(\ref{e:treat:sca}), write
+\begin{gather}
+  u''_1 = u'_1, u''_5 = u'_5,
+  \label{e:treat:euler3d:sca}
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{c}
+    \dfrac{\partial u''_1}{\partial x_1} \\
+    \dfrac{\partial u''_1}{\partial x_2} \\
+    \dfrac{\partial u''_1}{\partial x_3}
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} & \xi_{13} \\
+    \xi_{21} & \xi_{22} & \xi_{23} \\
+    \xi_{31} & \xi_{32} & \xi_{33}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    \dfrac{\partial u'_1}{\partial x_1} \\
+    \dfrac{\partial u'_1}{\partial x_2} \\
+    \dfrac{\partial u'_1}{\partial x_3}
+  \end{array}\right),
+  \left(\begin{array}{c}
+    \dfrac{\partial u''_5}{\partial x_1} \\
+    \dfrac{\partial u''_5}{\partial x_2} \\
+    \dfrac{\partial u''_5}{\partial x_3}
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} & \xi_{13} \\
+    \xi_{21} & \xi_{22} & \xi_{23} \\
+    \xi_{31} & \xi_{32} & \xi_{33}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    \dfrac{\partial u'_5}{\partial x_1} \\
+    \dfrac{\partial u'_5}{\partial x_2} \\
+    \dfrac{\partial u'_5}{\partial x_3}
+  \end{array}\right)
+  \notag
+\end{gather}
+%
+Equations (\ref{e:treat:euler3d:vec}) and (\ref{e:treat:euler3d:sca}) complete
+the treatment for the no-penetration boundary condition of the Euler equation
+in the three-dimensional space.
+
+\subsection{Two-Dimensional Treatment of the Euler Equation}
+
+In two-dimensional space, the coordinate transformation becomes simpler.  See
+Fig.~\ref{f:wall_coordinate}.  $\bigtriangleup ABD$ is a cell with the boundary
+face $\overline{BD}$ (as a line in the two-dimensional space).  A ghost cell
+$\bigtriangleup CBD$ is the mirror image of the interior cell $\bigtriangleup
+ABD$.  $\boldsymbol{\xi}_1$ points outward from the interior cell.  There is an
+angle $\theta$ between the axes $\xi_1$ and $x_1$, and the rotation matrix is
+written as
+\begin{align*}
+  \mathrm{R} = \left(\begin{array}{cc}
+    \cos\theta & -\sin\theta \\
+    \sin\theta & \cos\theta
+  \end{array}\right)
+  = \left(\begin{array}{cc}
+    \xi_{11} & \xi_{21} \\
+    \xi_{12} & \xi_{22}
+  \end{array}\right)
+\end{align*}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{wall_coordinate.eps}
+\caption{Coordinate systems in two-dimensional space.}
+\label{f:wall_coordinate}
+\end{figure}
+
+The conservation variables of the two-dimensional Euler equation is
+\begin{align*}
+  \renewcommand{\arraystretch}{2}
+  \mathbf{u} = \left(\begin{array}{c}
+    \rho \\ \rho v_1 \\ \rho v_2 \\
+    \rho\left(e + \dfrac{v_1^2+v_2^2}{2}\right)
+  \end{array}\right)
+  = \left(\begin{array}{c}
+    u_1 \\ u_2 \\ u_3 \\ u_4
+  \end{array}\right)
+\end{align*}
+
+Aided by Eq.~(\ref{e:treat:vec}), write
+\begin{align*}
+  \left(\begin{array}{c}
+    u''_2 \\ u''_3
+  \end{array}\right)
+  = &\;
+ -\left(\begin{array}{ccc}
+    T_{11} & T_{12} \\
+    T_{21} & T_{22}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    u'_2 \\ u'_3
+  \end{array}\right),
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    \dfrac{\partial u''_2}{\partial x_1} &
+    \dfrac{\partial u''_2}{\partial x_2} \\
+    \dfrac{\partial u''_3}{\partial x_1} &
+    \dfrac{\partial u''_3}{\partial x_2}
+  \end{array}\right)
+  = &\;
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} \\
+    T_{21} & T_{22}
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    \dfrac{\partial u'_2}{\partial x_1} &
+    \dfrac{\partial u'_2}{\partial x_2} \\
+    \dfrac{\partial u'_3}{\partial x_1} &
+    \dfrac{\partial u'_3}{\partial x_2}
+  \end{array}\right)
+  \left(\begin{array}{ccc}
+    T_{11} & T_{12} \\
+    T_{21} & T_{22}
+  \end{array}\right)
+\end{align*}
+%
+Aided by Eq.~(\ref{e:treat:sca}), write
+\begin{gather*}
+  u''_1 = u'_1, u''_4 = u'_4,
+  \\
+  \renewcommand{\arraystretch}{2.2}
+  \left(\begin{array}{c}
+    \dfrac{\partial u''_1}{\partial x_1} \\
+    \dfrac{\partial u''_1}{\partial x_2}
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} \\
+    \xi_{21} & \xi_{22}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    \dfrac{\partial u'_1}{\partial x_1} \\
+    \dfrac{\partial u'_1}{\partial y_2}
+  \end{array}\right),
+  \left(\begin{array}{c}
+    \dfrac{\partial u''_4}{\partial x_1} \\
+    \dfrac{\partial u''_4}{\partial x_2}
+  \end{array}\right)
+  = \left(\begin{array}{ccc}
+    \xi_{11} & \xi_{12} \\
+    \xi_{21} & \xi_{22}
+  \end{array}\right)
+  \left(\begin{array}{c}
+    \dfrac{\partial u'_4}{\partial x_1} \\
+    \dfrac{\partial u'_4}{\partial x_2}
+  \end{array}\right)
+\end{gather*}
+
+\section{No-Slip Boundary Condition}
+
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{99}
+\bibitem{laney_computational_1998} C. B. Laney, Computational Gasdynamics.
+Cambridge: Cambridge University Press, 1998.
+\bibitem{aris_vectors_1962} Rutherford Aris, Vectors, Tensors, and the Basic
+Equations of Fluid Mechanics, Prentice-Hall, 1962.
+\bibitem{wang_2d_1999} X.-Y. Wang and S.-C. Chang, ``A 2D Non-Splitting
+Unstructured Triangular Mesh Euler Solver Based on the Space-Time Conservation
+Element and Solution Element Method,'' Computational Fluid Dynamics JOURNAL,
+vol. 8, no. 2, pp. 309–325, 1999.
+\end{thebibliography}
+
+\end{document}

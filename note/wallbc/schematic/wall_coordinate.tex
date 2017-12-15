@@ -1,0 +1,35 @@
+\psset{unit=0.5cm}
+\begin{pspicture}(-3,-6)(7,5)
+
+\rput{12}{{%
+\psline[linewidth=0.5pt,linestyle=solid,arrowsize=4pt 2]{->}(0,0)(6,0)%
+\psline[linewidth=0.5pt,linestyle=solid,arrowsize=4pt 2]{->}(0,0)(0,4)%
+\psline[linewidth=1.2pt,linestyle=dotted,showpoints=true](0,0)(1.5,4)(4,0)%
+\psline[linewidth=1.2pt,linestyle=solid,showpoints=true](0,0)(4,0)(1.5,-4)(0,0)%
+\psdot[dotstyle=o,dotsize=2pt 2](1.7,1.4)%
+\psdot[dotstyle=o,dotsize=2pt 2](1.7,-1.4)%
+}}
+\psline[linewidth=0.5pt,linestyle=dashed](0,0)(6,0)
+\psarc[linewidth=0.5pt,linestyle=solid,arrowsize=4pt 2]{->}(0,0){4.7}{0}{12}
+\rput[l](5,0.5){$\theta$}
+
+\rput{12}{{%
+\rput[l]{-12}(6.2,0){$\xi_1$}%
+\rput[b]{-12}(0,4.2){$\xi_2$}%
+\rput[t]{-12}(1.5,-4.3){$A$}%
+\rput[lb]{-12}(4.1,0.3){$B$}%
+\rput[b]{-12}(1.5,4.3){$C$}%
+\rput[rt]{-12}(-0.2,0){$D$}%
+\rput[t]{-12}(1.7,-1.8){$E'$}%
+\rput[b]{-12}(1.7,1.8){$E''$}%
+}}
+
+\psline[linewidth=0.5pt,linestyle=solid,arrowsize=4pt 2]{->}(-2,-5)(5,-5)
+\psline[linewidth=0.5pt,linestyle=solid,arrowsize=4pt 2]{->}(-2,-5)(-2,2)
+\rput[l](5.1,-5){$x_1$}
+\rput[b](-2,2.1){$x_2$}
+\rput[rt](-2.1,-5.1){$O$}
+
+\end{pspicture}
+
+% vim: set fenc=utf8 ff=unix nobomb et sw=2 ts=2 tw=79:
